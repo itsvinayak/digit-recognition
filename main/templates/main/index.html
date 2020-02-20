@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <title>Digit Recognition By vinayak</title>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <style media="screen">
+    * {
+      padding: 0;
+      margin: 0;
+      background-color: #f2f2f2;
+      box-sizing: border-box;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    h1 {
+      letter-spacing: 1px;
+      font-size: 3rem;
+      font-family: cursive;
+      font-weight: bolder;
+      margin-top: 3%;
+      margin-bottom: 3%;
+    }
+
+    button {
+      width: 70%;
+      padding: 1%;
+      margin: 2%;
+      font-size: 1rem;
+      border:1px solid black;
+      background-color:#f2f2f2f2;
+    }
+    button:hover{
+      background-color: lightblue;
+    }
+    video {
+      display: flux;
+      border: 2px solid black;
+      align-item: center;
+      width: 30%;
+      height: 30%;
+    }
+
+    canvas,form {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Digit Recognition By vinayak </h1>
+
+  <div class="change">
+    <video id="camera-stream"></video>
+  </div>
+
+  <button type="button" onclick="sendImg()" name="button">Recognition</button>
+
+  <p id="error-message"></p>
+
+
+   <!-- Hidden canvas element. Used for taking snapshot of video. -->
+   <canvas></canvas>
+
+
+
+  <script type="text/javascript">
+
+
+    // camera usage function  ///////////////////////////////
+
+    navigator.getUserMedia(
+      // Options
+      {
+        video: true
+      },
+      // Success Callback
+      function(stream) {
+        var video = document.querySelector('video');
+        //video.src = window.URL.createObjectURL(stream);
+        video.srcObject = stream;
+        video.play();
+
+      },
+      // Error Callback
+      function(err) {
+
+        console.error(err);
+
+      }
+    );
+
+    //////////////////////////////////////////////////////
+
+    // function to take photo /////////////////////////////
+
+
+
+    function takeSnapshot() {
+
+      var hidden_canvas = document.querySelector('canvas'),
+        video = document.querySelector('video'),
+
+        // Get the exact size of the video element.
+        width = video.videoWidth,
+        height = video.videoHeight,
+
+        // Context object for working with the canvas.
+        context = hidden_canvas.getContext('2d');
+      // Set the canvas to the same dimensions as the video.
+      hidden_canvas.width = width;
+
+      hidden_canvas.height = height;
+
+      // Draw a copy of the current frame from the video on the canvas.
+      context.drawImage(video, 0, 0, width, height);
+
+      // Set the dataURL as source of an image element, showing the captured photo.
+      //image.setAttribute('value', hidden_canvas.toDataURL('image/png'));
+      //var imageDataURL =hidden_canvas.toDataURL('image/png');
+
+      // document.querySelector('.btn').click()
+      return hidden_canvas.toDataURL('image/png').replace('data:image/png;base64,','')
+
+    }
+
+    ////////////////////////////////////////////////////////////
+
+   ////getting crsf token ///////////////////////////////////
+   function getCookie(name) {
+           var cookieValue = null;
+           if (document.cookie && document.cookie !== '') {
+               var cookies = document.cookie.split(';');
+               for (var i = 0; i < cookies.length; i++) {
+                   var cookie = cookies[i].trim();
+                   // Does this cookie string begin with the name we want?
+                   if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                       cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                       break;
+                   }
+               }
+           }
+           return cookieValue;
+       }
+
+       function csrfSafeMethod(method) {
+       // these HTTP methods do not require CSRF protection
+       return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+   }
+      ///////////////////////////////////////////////////////
+
+    // ajax old way ///////////////////////////////////////
+
+    // function sendImg() {
+    //   takeSnapshot();
+    //   var xhttp = new XMLHttpRequest();
+    //   xhttp.onreadystatechange = function() {
+    //     if (xhttp.readyState === 4) {
+    //       document.querySelector('.change').innerHTML = this.response;
+    //     }
+    //   };
+    //
+    //   xhttp.open('GET', '/getImg',true);
+    //   xhttp.send();
+    // }
+
+
+    /////////ajax  new way ////////////////////////////////////
+    function sendImg(){
+        var csrftoken = getCookie('csrftoken');
+
+      $.ajaxSetup({
+          beforeSend: function(xhr, settings) {
+              if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                  xhr.setRequestHeader("X-CSRFToken", csrftoken);
+              }
+          }
+      });
+
+      $.ajax({
+            url: './getImg',
+            type:'POST',
+            dataType: 'json',
+            data : {
+
+                        image : JSON.stringify(takeSnapshot()),
+                       },
+        }).done(function(imgData) {
+               document.querySelector('.change').innerHTML = imgData.name;
+        }).fail(function(XMLHttpRequest, textStatus, errorThrown) {
+            console.log(XMLHttpRequest);
+            alert("error");
+        });
+
+      }
+
+    ////////////////////////////////////////////////////
+
+  </script>
+
+</body>
+
+</html>
